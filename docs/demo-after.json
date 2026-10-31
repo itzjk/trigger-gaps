@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "engine": {
+    "name": "trigger-gaps",
+    "version": "0.1.0",
+    "sqlite_version": "3.54.1"
+  },
+  "scope": {
+    "schema": "main",
+    "temporary": false,
+    "attached": false,
+    "locations": "stored-trigger-sql",
+    "offset_unit": "unicode-code-point",
+    "line_base": 1,
+    "column_base": 1,
+    "offset_base": 0
+  },
+  "complete": true,
+  "exit_code": 0,
+  "summary": {
+    "triggers": 3,
+    "lists_analyzed": 3,
+    "missing_occurrences": 0,
+    "triggers_with_missing": 0,
+    "omissions": 0
+  },
+  "triggers": [
+    {
+      "name": "good",
+      "table": "items",
+      "sql": "CREATE TRIGGER good AFTER UPDATE OF price ON items\nBEGIN INSERT INTO log VALUES ('good'); END",
+      "event": "UPDATE",
+      "timing": "AFTER",
+      "status": "all-recognized",
+      "declared": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 36,
+            "line": 1,
+            "column": 37,
+            "length": 5
+          }
+        }
+      ],
+      "recognized": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 36,
+            "line": 1,
+            "column": 37,
+            "length": 5
+          },
+          "column": "price"
+        }
+      ],
+      "missing": [],
+      "unresolved": [],
+      "omissions": []
+    },
+    {
+      "name": "mixed",
+      "table": "items",
+      "sql": "CREATE TRIGGER mixed AFTER UPDATE OF price, price ON items\nBEGIN INSERT INTO log VALUES ('mixed'); END",
+      "event": "UPDATE",
+      "timing": "AFTER",
+      "status": "all-recognized",
+      "declared": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 37,
+            "line": 1,
+            "column": 38,
+            "length": 5
+          }
+        },
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 44,
+            "line": 1,
+            "column": 45,
+            "length": 5
+          }
+        }
+      ],
+      "recognized": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 37,
+            "line": 1,
+            "column": 38,
+            "length": 5
+          },
+          "column": "price"
+        },
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 44,
+            "line": 1,
+            "column": 45,
+            "length": 5
+          },
+          "column": "price"
+        }
+      ],
+      "missing": [],
+      "unresolved": [],
+      "omissions": []
+    },
+    {
+      "name": "typo",
+      "table": "items",
+      "sql": "CREATE TRIGGER typo AFTER UPDATE OF price ON items\nBEGIN INSERT INTO log VALUES ('typo'); END",
+      "event": "UPDATE",
+      "timing": "AFTER",
+      "status": "all-recognized",
+      "declared": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 36,
+            "line": 1,
+            "column": 37,
+            "length": 5
+          }
+        }
+      ],
+      "recognized": [
+        {
+          "name": "price",
+          "raw": "price",
+          "location": {
+            "offset": 36,
+            "line": 1,
+            "column": 37,
+            "length": 5
+          },
+          "column": "price"
+        }
+      ],
+      "missing": [],
+      "unresolved": [],
+      "omissions": []
+    }
+  ],
+  "omissions": [],
+  "input": {
+    "name": "after.sqlite",
+    "sha256": "45d39d1719a2032df5237aebea42de5c363dd9293b06bd73a90b97d741ff6e68",
+    "bytes": 12288
+  }
+}
