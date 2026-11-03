@@ -187,6 +187,11 @@ def check_snapshot(path: str | Path, limits: Limits = Limits()) -> dict:
         fd = os.open(source, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
         with os.fdopen(fd, "rb") as stream:
             initial = os.fstat(stream.fileno())
+            # Path-based baseline, compared only against later path-based stats. A descriptor
+            # opened O_RDONLY on Windows reports different st_dev/st_ino than a path stat of the
+            # same file, so fstat-vs-stat would always look "changed" there; like-for-like keeps
+            # the tamper check portable.
+            initial_path = source.stat()
             if not stat.S_ISREG(initial.st_mode):
                 raise InputError("input must be a regular standalone SQLite file")
             if initial.st_size > limits.max_file_bytes:
@@ -213,7 +218,7 @@ def check_snapshot(path: str | Path, limits: Limits = Limits()) -> dict:
                 stream.seek(0)
                 final_digest = fingerprint(stream, deadline, limits.max_file_bytes)
                 if (digest != final_digest or signature(initial) != signature(os.fstat(stream.fileno()))
-                        or signature(initial) != signature(source.stat())):
+                        or signature(initial_path) != signature(source.stat())):
                     raise InputError("input changed during analysis")
                 reject_sidecars(source)
                 deadline.tick()
