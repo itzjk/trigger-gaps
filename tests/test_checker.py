@@ -25,7 +25,9 @@ class CheckerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
-        self.path = self.directory / "snapshot with ? and #.sqlite"
+        # A deliberately awkward name (spaces and punctuation) that is still valid on every OS.
+        # "?" is reserved on Windows, so it cannot appear here — the file could not be created.
+        self.path = self.directory / "snapshot #1 with spaces & punctuation.sqlite"
 
     def database(self, sql):
         with closing(sqlite3.connect(self.path)) as db, db:
@@ -140,8 +142,24 @@ CREATE TRIGGER d AFTER DELETE ON items BEGIN SELECT 1; END;''')
         self.assertEqual(r["omissions"][0]["reason"], "instead-of-trigger")
 
     def test_shadow_target_is_not_analyzed(self):
-        self.database('CREATE VIRTUAL TABLE docs USING fts5(title); CREATE TRIGGER st AFTER UPDATE OF prcie ON docs_content BEGIN SELECT 1; END;')
-        r = check_snapshot(self.path)
+        # table_list reports a shadow table's type as "shadow"; the checker must omit a trigger
+        # on one. We mock the metadata (as test_virtual_target_is_not_analyzed does) instead of
+        # creating a real trigger on an FTS5 shadow table: recent SQLite (>= 3.51) refuses
+        # "CREATE TRIGGER ... ON docs_content" ("cannot create triggers on shadow tables"), so
+        # the old setup errored on new engines while testing SQLite's rule, not the checker's.
+        self.database('CREATE TABLE items(price); CREATE TRIGGER st AFTER UPDATE OF prcie ON items BEGIN SELECT 1; END;')
+        real_connect = sqlite3.connect
+        class MetadataConnection(sqlite3.Connection):
+            def execute(self, sql, *args):
+                cursor = super().execute(sql, *args)
+                if sql == 'PRAGMA main.table_list':
+                    return [tuple('shadow' if i == 2 and row[1] == 'items' else value
+                                  for i, value in enumerate(row)) for row in cursor]
+                return cursor
+        def connect(*args, **kwargs):
+            return real_connect(*args, **kwargs, factory=MetadataConnection)
+        with patch.object(checker.sqlite3, 'connect', side_effect=connect):
+            r = check_snapshot(self.path)
         self.assertEqual(r["exit_code"], 2)
         self.assertEqual(r["summary"]["triggers"], 1)
         self.assertEqual(r["summary"]["missing_occurrences"], 0)
