@@ -26,15 +26,19 @@ class Limits:
 
 
 class Deadline:
+    # perf_counter, not monotonic: it is the high-resolution monotonic clock on every platform.
+    # Before Python 3.13 time.monotonic() on Windows was GetTickCount64 (~15 ms resolution), so a
+    # sub-tick timeout set and checked within one tick was never seen to pass and tiny-timeout
+    # analysis finished "in time". perf_counter advances sub-microsecond everywhere.
     def __init__(self, seconds: float):
-        self.end = time.monotonic() + seconds
+        self.end = time.perf_counter() + seconds
 
     def tick(self) -> None:
-        if time.monotonic() >= self.end:
+        if time.perf_counter() >= self.end:
             raise InputError("analysis timeout exceeded")
 
     def progress(self) -> int:
-        return int(time.monotonic() >= self.end)
+        return int(time.perf_counter() >= self.end)
 
 
 def signature(info: os.stat_result) -> tuple:
