@@ -283,8 +283,14 @@ CREATE TRIGGER d AFTER DELETE ON items BEGIN SELECT 1; END;''')
             os.replace(replacement, self.path)
             return result
         with patch.object(checker, 'analyze', side_effect=replace):
-            with self.assertRaisesRegex(InputError, 'changed'):
+            with self.assertRaises(InputError) as caught:
                 check_snapshot(self.path)
+        # On POSIX the rename-over-open succeeds and the checker's own signature check fires
+        # ("input changed during analysis"). Windows forbids replacing a file that is still
+        # open, so the swap itself is refused (WinError 5, surfaced as InputError) — the
+        # tampering is rejected either way, but only POSIX exercises the "changed" message.
+        if os.name != 'nt':
+            self.assertRegex(str(caught.exception), 'changed')
 
     def test_in_place_changes_detected(self):
         create(self.path)
